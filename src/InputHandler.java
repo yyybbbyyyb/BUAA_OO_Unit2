@@ -20,12 +20,12 @@ public class InputHandler extends Thread {
     private InputHandler() {
         requestQueuesMap = new HashMap<>();
         for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-            requestQueuesMap.put(i, new RequestQueue(i));
+            requestQueuesMap.put(i, new RequestQueue());
         }
     }
 
-    public void addRequest(PersonRequest request) {
-        requestQueuesMap.get(request.getElevatorId()).addRequest(request);
+    public void addPassenger(Passenger passenger) {
+        requestQueuesMap.get(passenger.getByElevatorId()).addPassenger(passenger);
     }
 
     @Override
@@ -39,7 +39,8 @@ public class InputHandler extends Thread {
                 }
                 break;
             } else {
-                addRequest(request);
+                Passenger passenger = Passenger.reqToPassenger(request);
+                addPassenger(passenger);
             }
         }
         try {

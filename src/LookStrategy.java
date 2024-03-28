@@ -1,39 +1,37 @@
+import com.oocourse.elevator1.PersonRequest;
+
+import java.util.ArrayList;
+
 public class LookStrategy implements Strategy {
 
-    private final int elevatorId;
-
-    private final RequestQueue inputRequestQueue;
+    private final RequestQueue requestQueue;
 
     public LookStrategy(int elevatorId) {
-        this.elevatorId = elevatorId;
-        this.inputRequestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
+        this.requestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
     }
 
 
     @Override
     public ElevatorState getNextState(Elevator elevator) {
         int currentFloor = elevator.getCurrentFloor();
-        int currentRequestNum = elevator.getCurrentRequestNum();
-        boolean currentDirection = elevator.getDirection();
-        RequestQueue elevatorRequestQueue = elevator.getRequestQueue();
-        if (canOpenElevatorForOut(currentFloor, elevatorRequestQueue)
-            || canOpenElevatorForIn(currentFloor, currentRequestNum) ) {
+        int passengerNum = elevator.getPassengerNum();
+        boolean Direction = elevator.getDirection();
+        ArrayList<Passenger> passengers = elevator.getPassengers();
+        if (canOpenElevatorForOut(currentFloor, passengers)
+            || canOpenElevatorForIn(currentFloor, passengerNum, Direction) ) {
             return ElevatorState.OPEN;
         }
-        if (currentRequestNum != 0) {
-            if (hasNoFollowDirection(currentFloor, currentDirection, elevatorRequestQueue)) {
-                return ElevatorState.REVERSE;
-            }
+        if (passengerNum != 0) {
             return ElevatorState.MOVE;
         } else {
-            if (inputRequestQueue.getCurrentRequestNum() == 0) {
-                if (InputHandler.getInstance().getRequestQueue(elevatorId).isEnd()) {
+            if (requestQueue.isEmpty()) {
+                if (requestQueue.isEnd()) {
                     return ElevatorState.OVER;
                 } else {
                     return ElevatorState.WAITING;
                 }
             } else {
-                if (hasReqInInputQueueInDirection(currentFloor, currentDirection)) {
+                if (hasReqInDirection(currentFloor, Direction)) {
                     return ElevatorState.MOVE;
                 } else {
                     return ElevatorState.REVERSE;
@@ -42,38 +40,43 @@ public class LookStrategy implements Strategy {
         }
     }
 
-    private boolean canOpenElevatorForOut(int currentFloor, RequestQueue requestQueue) {
-        return !requestQueue.getToFloor(currentFloor).isEmpty();
-    }
-
-    private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum) {
-        if (currentRequestNum == Constants.MAX_REQUEST_NUM) {
-            return false;
-        }
-        return !inputRequestQueue.getFromFloor(currentFloor).isEmpty();
-    }
-
-    private boolean hasReqInInputQueueInDirection(int currentFloor, boolean direction) {
-        int endFloor = direction ? Constants.MAX_FLOOR : Constants.INIT_FLOOR;
-        int step = direction ? 1 : -1;
-
-        for (int i = currentFloor; i != endFloor + step; i += step) {
-            if (!inputRequestQueue.getFromFloor(i).isEmpty()) {
+    private boolean canOpenElevatorForOut(int currentFloor, ArrayList<Passenger> passengers) {
+        for (Passenger passenger : passengers) {
+            if (passenger.getTo() == currentFloor) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean hasNoFollowDirection(int currentFloor, boolean direction, RequestQueue requestQueue) {
-        int endFloor = direction ? Constants.MAX_FLOOR : Constants.INIT_FLOOR;
-        int step = direction ? 1 : -1;
-
-        for (int i = currentFloor; i != endFloor + step; i += step) {
-            if (!requestQueue.getToFloor(i).isEmpty()) {
+    private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum, boolean direction) {
+        if (currentRequestNum == Constants.MAX_REQUEST_NUM) {
+            return false;
+        }
+        synchronized (requestQueue) {
+            if (requestQueue.hasNoFromFloorReq(currentFloor)) {
                 return false;
             }
+            for (Passenger passenger : requestQueue.getFromFloor(currentFloor)) {
+                if (passenger.isSameDirection(currentFloor, direction)) {
+                    return true;
+                }
+            }
+            return false;
         }
-        return true;
+    }
+
+    private boolean hasReqInDirection(int currentFloor, boolean direction) {
+        int endFloor = direction ? Constants.MAX_FLOOR : Constants.INIT_FLOOR;
+        int step = direction ? -1 : 1;
+
+        synchronized (requestQueue) {
+            for (int i = endFloor; i != currentFloor; i += step) {
+                if (!requestQueue.hasNoFromFloorReq(i)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

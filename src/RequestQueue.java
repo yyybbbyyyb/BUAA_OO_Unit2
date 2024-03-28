@@ -1,87 +1,38 @@
 import com.oocourse.elevator1.PersonRequest;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 public class RequestQueue {
-    private final int elevatorId;
+    private final List<Passenger> passengers;
 
-    private final HashMap<Integer, HashSet<PersonRequest>> requestQueueByFromFloor;
+    private final HashMap<Integer, ArrayList<Passenger>> requestQueueByFromFloor;
 
-    private final HashMap<Integer, HashSet<PersonRequest>> requestQueueByToFloor;
-
-    private int currentRequestNum;
+    private final HashMap<Integer, ArrayList<Passenger>> requestQueueByToFloor;
 
     private boolean isEnd;
 
-    public RequestQueue(int elevatorId) {
-        this.elevatorId = elevatorId;
-        this.currentRequestNum = 0;
+    public RequestQueue() {
+        passengers = new ArrayList<>();
         requestQueueByFromFloor = new HashMap<>();
         requestQueueByToFloor = new HashMap<>();
         this.isEnd = false;
         for (int i = 1; i <= Constants.MAX_FLOOR; i++) {
-            requestQueueByFromFloor.put(i, new HashSet<>());
-            requestQueueByToFloor.put(i, new HashSet<>());
+            requestQueueByFromFloor.put(i, new ArrayList<>());
+            requestQueueByToFloor.put(i, new ArrayList<>());
         }
     }
 
-    public synchronized void addRequest(PersonRequest request) {
-        requestQueueByFromFloor.get(request.getFromFloor()).add(request);
-        requestQueueByToFloor.get(request.getToFloor()).add(request);
-        currentRequestNum++;
+    public synchronized void addPassenger(Passenger passenger) {
+        passengers.add(passenger);
+        requestQueueByFromFloor.get(passenger.getFrom()).add(passenger);
+        requestQueueByToFloor.get(passenger.getTo()).add(passenger);
         notifyAll();
     }
 
-    public synchronized PersonRequest gerOneRequestAndRemove(int floor, IndexType indexType) {
-        if (isEmpty() && !isEnd) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        if (isEmpty()) {
-            return null;
-        }
-        PersonRequest request = null;
-        HashSet<PersonRequest> requestSet = null;
-        if (indexType == IndexType.BY_FROM) {
-            requestSet = requestQueueByFromFloor.get(floor);
-        } else if (indexType == IndexType.BY_TO) {
-            requestSet = requestQueueByToFloor.get(floor);
-        }
-        if (requestSet != null && !requestSet.isEmpty()) {
-            Iterator<PersonRequest> iterator = requestSet.iterator();
-            request = iterator.next();
-        }
-        if (request != null) {
-            delRequest(request);
-        }
-        notifyAll();
-        return request;
-    }
-
-    public synchronized void delRequest(PersonRequest request) {
-        Iterator<PersonRequest> fromFloorIterator = requestQueueByFromFloor.get(request.getFromFloor()).iterator();
-        while (fromFloorIterator.hasNext()) {
-            PersonRequest req = fromFloorIterator.next();
-            if (req.equals(request)) {
-                fromFloorIterator.remove();
-                break;
-            }
-        }
-
-        Iterator<PersonRequest> toFloorIterator = requestQueueByToFloor.get(request.getToFloor()).iterator();
-        while (toFloorIterator.hasNext()) {
-            PersonRequest req = toFloorIterator.next();
-            if (req.equals(request)) {
-                toFloorIterator.remove();
-                break;
-            }
-        }
-        currentRequestNum--;
+    public synchronized void delPassenger(Passenger passenger) {
+        passengers.remove(passenger);
+        requestQueueByFromFloor.get(passenger.getFrom()).remove(passenger);
+        requestQueueByToFloor.get(passenger.getTo()).remove(passenger);
     }
 
     public synchronized void setEnd(boolean isEnd) {
@@ -94,18 +45,21 @@ public class RequestQueue {
     }
 
     public synchronized boolean isEmpty() {
-        return currentRequestNum == 0;
+        return passengers.isEmpty();
     }
 
-    public synchronized HashSet<PersonRequest> getFromFloor(int floor) {
+    public synchronized ArrayList<Passenger> getFromFloor(int floor) {
         return requestQueueByFromFloor.get(floor);
     }
 
-    public synchronized HashSet<PersonRequest> getToFloor(int floor) {
+    public synchronized ArrayList<Passenger> getToFloor(int floor) {
         return requestQueueByToFloor.get(floor);
     }
 
-    public synchronized int getCurrentRequestNum() {
-        return currentRequestNum;
+    public synchronized boolean hasNoFromFloorReq(int floor) {
+        if (requestQueueByFromFloor.get(floor) == null) {
+            return true;
+        }
+        return requestQueueByFromFloor.get(floor).isEmpty();
     }
 }

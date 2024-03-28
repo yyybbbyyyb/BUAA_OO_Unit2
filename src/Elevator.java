@@ -1,23 +1,25 @@
 import com.oocourse.elevator1.PersonRequest;
 import com.oocourse.elevator1.TimableOutput;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
 public class Elevator extends Thread {
     private final int elevatorId;
-
     private int currentFloor;
-
     private boolean direction;        //二元性电梯只能向上向下，故起始方向向上，为true
-
     private final RequestQueue requestQueue;
-
+    private final ArrayList<Passenger> passengers;
     private final Strategy strategy;
 
     public Elevator(int elevatorId) {
         this.elevatorId = elevatorId;
         currentFloor = Constants.INIT_FLOOR;
         direction = true;
-        requestQueue = new RequestQueue(elevatorId);
+        passengers = new ArrayList<>();
         strategy = new LookStrategy(elevatorId);
+        requestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
     }
 
     @Override
@@ -31,9 +33,9 @@ public class Elevator extends Thread {
             } else if (nextElevatorState == ElevatorState.REVERSE) {
                 direction = !direction;
             } else if (nextElevatorState == ElevatorState.WAITING) {
-                synchronized (InputHandler.getInstance().getRequestQueue(elevatorId)) {
+                synchronized (requestQueue) {
                     try {
-                        InputHandler.getInstance().getRequestQueue(elevatorId).wait();
+                        requestQueue.wait();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -58,40 +60,61 @@ public class Elevator extends Thread {
         TimableOutput.println(String.format("ARRIVE-%d-%d", currentFloor, elevatorId));
     }
 
+    private void outPassenger() {
+        if (passengers.isEmpty()) {
+            return;
+        }
+        List<Passenger> passengersToRemove = new ArrayList<>();
+        for (Passenger passenger : passengers) {
+            if (passenger.getTo() == currentFloor) {
+                TimableOutput.println(String.format("OUT-%d-%d-%d", passenger.getId(),
+                        currentFloor, elevatorId));
+                passengersToRemove.add(passenger);
+            }
+        }
+        for (Passenger passenger : passengersToRemove) {
+            passengers.remove(passenger);
+        }
+    }
+
+    private void inPassenger() {
+        synchronized (requestQueue) {
+            if (!requestQueue.hasNoFromFloorReq(currentFloor)) {
+                ArrayList<Passenger> requests = requestQueue.getFromFloor(currentFloor);
+                List<Passenger> requestsToRemove = new ArrayList<>();
+                for (Passenger req : requests) {
+                    if (req.isSameDirection(currentFloor, direction)) {
+                        passengers.add(req);
+                        TimableOutput.println(String.format("IN-%d-%d-%d", req.getId(),
+                                currentFloor, elevatorId));
+                        requestsToRemove.add(req);
+                        if (getPassengerNum() == Constants.MAX_REQUEST_NUM) {
+                            break;
+                        }
+                    }
+                }
+                for (Passenger req : requestsToRemove) {
+                    requestQueue.delPassenger(req);
+                }
+            }
+        }
+    }
+
     private void openAndClose() {
         TimableOutput.println(String.format("OPEN-%d-%d", currentFloor, elevatorId));
+        outPassenger();
         try {
             Thread.sleep((long) (Constants.OPEN_TIME * 1000));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        while (true) {
-            if (requestQueue.isEmpty()) {
-                break;
-            }
-            PersonRequest req = requestQueue.gerOneRequestAndRemove(currentFloor, IndexType.BY_TO);
-            if (req == null) {
-                break;
-            }
-            TimableOutput.println(String.format("OUT-%d-%d-%d", req.getPersonId(),
-                        currentFloor, elevatorId));
+
+        ElevatorState state = strategy.getNextState(this);
+        if (state == ElevatorState.REVERSE) {
+            direction = !direction;
         }
-        while (true) {
-            if (InputHandler.getInstance().getRequestQueue(elevatorId).isEmpty()) {
-                break;
-            }
-            PersonRequest req = InputHandler.getInstance().getRequestQueue(elevatorId).
-                    gerOneRequestAndRemove(currentFloor, IndexType.BY_FROM);
-            if (req == null) {
-                break;
-            }
-            if (requestQueue.getCurrentRequestNum() == Constants.MAX_REQUEST_NUM) {
-                break;
-            }
-            requestQueue.addRequest(req);
-            TimableOutput.println(String.format("IN-%d-%d-%d", req.getPersonId(),
-                    currentFloor, elevatorId));
-        }
+
+        inPassenger();
         try {
             Thread.sleep((long) (Constants.CLOSE_TIME * 1000));
         } catch (InterruptedException e) {
@@ -100,25 +123,20 @@ public class Elevator extends Thread {
         TimableOutput.println(String.format("CLOSE-%d-%d", currentFloor, elevatorId));
     }
 
-
-    public int getElevatorId() {
-        return elevatorId;
-    }
-
     public int getCurrentFloor() {
         return currentFloor;
     }
 
-    public int getCurrentRequestNum() {
-        return requestQueue.getCurrentRequestNum();
+    public int getPassengerNum() {
+        return passengers.size();
     }
 
     public boolean getDirection() {
         return direction;
     }
 
-    public RequestQueue getRequestQueue() {
-        return requestQueue;
+    public ArrayList<Passenger> getPassengers() {
+        return passengers;
     }
 
 }
