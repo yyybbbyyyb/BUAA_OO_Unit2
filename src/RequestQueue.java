@@ -86,6 +86,7 @@ public class RequestQueue {
 
     public synchronized void setEnd(boolean isEnd) {
         this.isEnd = isEnd;
+        notifyAll();
     }
 
     public synchronized boolean isEnd() {
