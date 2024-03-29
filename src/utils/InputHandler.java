@@ -1,5 +1,10 @@
+package utils;
+
 import com.oocourse.elevator1.ElevatorInput;
 import com.oocourse.elevator1.PersonRequest;
+import constants.Constants;
+import entity.Passenger;
+import entity.RequestQueue;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -8,7 +13,7 @@ public class InputHandler extends Thread {
 
     private static InputHandler instance;
 
-    HashMap<Integer, RequestQueue> requestQueuesMap;
+    private HashMap<Integer, RequestQueue> requestQueuesMap;
 
     public static InputHandler getInstance() {
         if (instance == null) {

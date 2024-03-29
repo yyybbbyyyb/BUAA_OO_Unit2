@@ -1,3 +1,5 @@
+package constants;
+
 public class Constants {
     public static final int INIT_FLOOR = 1;
 

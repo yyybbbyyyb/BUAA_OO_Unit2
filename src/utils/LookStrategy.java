@@ -1,4 +1,10 @@
-import com.oocourse.elevator1.PersonRequest;
+package utils;
+
+import constants.Constants;
+import constants.ElevatorState;
+import entity.Elevator;
+import entity.Passenger;
+import entity.RequestQueue;
 
 import java.util.ArrayList;
 
@@ -10,15 +16,14 @@ public class LookStrategy implements Strategy {
         this.requestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
     }
 
-
     @Override
     public ElevatorState getNextState(Elevator elevator) {
         int currentFloor = elevator.getCurrentFloor();
         int passengerNum = elevator.getPassengerNum();
-        boolean Direction = elevator.getDirection();
+        boolean direction = elevator.getDirection();
         ArrayList<Passenger> passengers = elevator.getPassengers();
         if (canOpenElevatorForOut(currentFloor, passengers)
-            || canOpenElevatorForIn(currentFloor, passengerNum, Direction) ) {
+            || canOpenElevatorForIn(currentFloor, passengerNum, direction)) {
             return ElevatorState.OPEN;
         }
         if (passengerNum != 0) {
@@ -31,7 +36,7 @@ public class LookStrategy implements Strategy {
                     return ElevatorState.WAITING;
                 }
             } else {
-                if (hasReqInDirection(currentFloor, Direction)) {
+                if (hasReqInDirection(currentFloor, direction)) {
                     return ElevatorState.MOVE;
                 } else {
                     return ElevatorState.REVERSE;
@@ -49,7 +54,8 @@ public class LookStrategy implements Strategy {
         return false;
     }
 
-    private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum, boolean direction) {
+    private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum,
+                                         boolean direction) {
         if (currentRequestNum == Constants.MAX_REQUEST_NUM) {
             return false;
         }

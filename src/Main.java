@@ -1,6 +1,7 @@
-import com.oocourse.elevator1.ElevatorInput;
-import com.oocourse.elevator1.PersonRequest;
 import com.oocourse.elevator1.TimableOutput;
+import constants.Constants;
+import entity.Elevator;
+import utils.InputHandler;
 
 import java.io.IOException;
 

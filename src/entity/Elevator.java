@@ -1,8 +1,13 @@
-import com.oocourse.elevator1.PersonRequest;
+package entity;
+
 import com.oocourse.elevator1.TimableOutput;
+import constants.Constants;
+import constants.ElevatorState;
+import utils.InputHandler;
+import utils.LookStrategy;
+import utils.Strategy;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 public class Elevator extends Thread {

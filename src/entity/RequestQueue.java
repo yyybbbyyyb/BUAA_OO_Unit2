@@ -1,6 +1,10 @@
-import com.oocourse.elevator1.PersonRequest;
+package entity;
 
-import java.util.*;
+import constants.Constants;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class RequestQueue {
     private final List<Passenger> passengers;

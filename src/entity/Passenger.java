@@ -1,3 +1,5 @@
+package entity;
+
 import com.oocourse.elevator1.PersonRequest;
 
 public class Passenger {
@@ -34,6 +36,7 @@ public class Passenger {
     }
 
     public static Passenger reqToPassenger(PersonRequest request) {
-        return new Passenger(request.getPersonId(), request.getFromFloor(), request.getToFloor(), request.getElevatorId());
+        return new Passenger(request.getPersonId(), request.getFromFloor(),
+                request.getToFloor(), request.getElevatorId());
     }
 }
