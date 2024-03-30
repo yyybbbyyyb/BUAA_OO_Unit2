@@ -11,7 +11,5 @@ public class Constants {
 
     public static final double MOVE_TIME = 0.4;
 
-    public static final double OPEN_TIME = 0.2;
-
-    public static final double CLOSE_TIME = 0.2;
+    public static final double OPEN_CLOSE_TIME = 0.4;
 }

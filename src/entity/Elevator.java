@@ -107,24 +107,17 @@ public class Elevator extends Thread {
 
     private void openAndClose() {
         TimableOutput.println(String.format("OPEN-%d-%d", currentFloor, elevatorId));
-        outPassenger();
         try {
-            Thread.sleep((long) (Constants.OPEN_TIME * 1000));
+            Thread.sleep((long) (Constants.OPEN_CLOSE_TIME * 1000));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
+        outPassenger();
         ElevatorState state = strategy.getNextState(this);
         if (state == ElevatorState.REVERSE) {
             direction = !direction;
         }
-
         inPassenger();
-        try {
-            Thread.sleep((long) (Constants.CLOSE_TIME * 1000));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         TimableOutput.println(String.format("CLOSE-%d-%d", currentFloor, elevatorId));
     }
 
