@@ -10,23 +10,16 @@ import java.util.Random;
 public class RoundDispatcher implements Dispatcher {
     private int elevatorId = 1;
 
+    private int getNextElevatorId() {
+        elevatorId++;
+        if (elevatorId > 6) {
+            elevatorId = 1;
+        }
+        return elevatorId;
+    }
+
     @Override
     public int getElevatorId(Passenger passenger) {
-        ArrayList<Elevator> nonResetElevators = new ArrayList<>();
-        for (int i = 1; i <= 6; i++) {
-            Elevator elevator = Elevators.getElevator(i);
-            if (!elevator.isReset()) {
-                nonResetElevators.add(elevator);
-            }
-        }
-        if (!nonResetElevators.isEmpty()) {
-            // 随机选择一个不处于重置状态的电梯
-            Random random = new Random();
-            int randomIndex = random.nextInt(nonResetElevators.size());
-            return nonResetElevators.get(randomIndex).getElevatorId();
-        } else {
-            System.out.println("!");
-            return 1;
-        }
+        return getNextElevatorId();
     }
 }

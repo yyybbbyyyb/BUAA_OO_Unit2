@@ -16,16 +16,6 @@ public class Dispatch extends Thread {
 
     private final RequestQueue globalReq = InputHandler.getInstance().getGlobalRequestQueue();
 
-    private boolean allElevatorsInReset() {
-        for (int i = 1; i <= 6; i++) {
-            Elevator elevator = Elevators.getElevator(i);
-            if (!elevator.isReset()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public void run() {
         while (!globalReq.isEnd()) {
@@ -43,19 +33,11 @@ public class Dispatch extends Thread {
     }
 
     public void dispatchPassenger() {
-        synchronized (this) {
-            while (allElevatorsInReset()) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
 
         ArrayList<Passenger> removeList = new ArrayList<>();
         for (Passenger passenger: globalReq.getPassengers()) {
             int elevatorId = dispatcher.getElevatorId(passenger);
+
             InputHandler.getInstance().getRequestQueue(elevatorId).addPassenger(passenger);
             passenger.setServed(true);
             passenger.setByElevatorId(elevatorId);

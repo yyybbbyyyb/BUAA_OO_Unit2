@@ -70,7 +70,7 @@ public class Elevator extends Thread {
         }
     }
 
-    private synchronized void reset() {
+    private void reset() {
         if (!passengers.isEmpty()) {
             TimableOutput.println(String.format("OPEN-%d-%d", currentFloor, elevatorId));
             try {
@@ -100,30 +100,30 @@ public class Elevator extends Thread {
         }
         MAX_REQUEST_NUM = RESET_MAX_REQUEST_NUM;
         MOVE_TIME = RESET_MOVE_TIME;
-        TimableOutput.println(String.format("RESET_BEGIN-%d", elevatorId));
-        List<Passenger> passengersToRemove2 = new ArrayList<>();
-        for (Passenger passenger : requestQueue.getPassengers()) {
-            passenger.setByElevatorId(-1);
-            passenger.setServed(false);
-            passengersToRemove2.add(passenger);
-            InputHandler.getInstance().addPassenger(passenger, false);
+        synchronized (requestQueue) {
+            TimableOutput.println(String.format("RESET_BEGIN-%d", elevatorId));
+            List<Passenger> passengersToRemove2 = new ArrayList<>();
+            for (Passenger passenger : requestQueue.getPassengers()) {
+                passenger.setByElevatorId(-1);
+                passenger.setServed(false);
+                passengersToRemove2.add(passenger);
+                InputHandler.getInstance().addPassenger(passenger, false);
+            }
+            for (Passenger passenger : passengersToRemove2) {
+                requestQueue.delPassenger(passenger);
+            }
+            try {
+                Thread.sleep((long) (Constants.RESET_TIME * 1000));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            TimableOutput.println(String.format("RESET_END-%d", elevatorId));
+            isReset = false;
         }
-        for (Passenger passenger : passengersToRemove2) {
-            requestQueue.delPassenger(passenger);
-        }
-        try {
-            Thread.sleep((long) (Constants.RESET_TIME * 1000));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        TimableOutput.println(String.format("RESET_END-%d", elevatorId));
-        isReset = false;
-        notifyAll();
     }
 
     private void move() {
         //TODO:弹射起步？
-
 
         try {
             Thread.sleep((long) (MOVE_TIME * 1000));
@@ -199,13 +199,6 @@ public class Elevator extends Thread {
         return isReset;
     }
 
-    public void setMAX_REQUEST_NUM(int MAX_REQUEST_NUM) {
-        this.MAX_REQUEST_NUM = MAX_REQUEST_NUM;
-    }
-
-    public void setMOVE_TIME(double MOVE_TIME) {
-        this.MOVE_TIME = MOVE_TIME;
-    }
 
     public int getMaxRequestNum() {
         return MAX_REQUEST_NUM;
