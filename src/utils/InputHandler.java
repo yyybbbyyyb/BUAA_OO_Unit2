@@ -1,8 +1,13 @@
 package utils;
 
-import com.oocourse.elevator1.ElevatorInput;
-import com.oocourse.elevator1.PersonRequest;
+import Config.Elevators;
+import com.oocourse.elevator2.ElevatorInput;
+import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator2.Request;
+import com.oocourse.elevator2.ResetRequest;
+
 import constants.Constants;
+import entity.Elevator;
 import entity.Passenger;
 import entity.RequestQueue;
 
@@ -13,7 +18,11 @@ public class InputHandler extends Thread {
 
     private static InputHandler instance;
 
-    private HashMap<Integer, RequestQueue> requestQueuesMap;
+    private final RequestQueue globalReq = new RequestQueue();
+
+    private final HashMap<Integer, RequestQueue> elevatorReq = new HashMap<>();
+
+    private final Counter counter = new Counter();
 
     public static InputHandler getInstance() {
         if (instance == null) {
@@ -22,30 +31,49 @@ public class InputHandler extends Thread {
         return instance;
     }
 
-    private InputHandler() {
-        requestQueuesMap = new HashMap<>();
+    public InputHandler() {
         for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-            requestQueuesMap.put(i, new RequestQueue());
+            elevatorReq.put(i, new RequestQueue());
         }
     }
 
-    public void addPassenger(Passenger passenger) {
-        requestQueuesMap.get(passenger.getByElevatorId()).addPassenger(passenger);
+    public synchronized void addPassenger(Passenger passenger, Boolean isNewPassenger) {
+        globalReq.addPassenger(passenger);
+        if (isNewPassenger) {
+            counter.increment(1);
+        }
     }
 
     @Override
     public void run() {
         ElevatorInput elevatorInput = new ElevatorInput(System.in);
         while (true) {
-            PersonRequest request = elevatorInput.nextPersonRequest();
+            Request request = elevatorInput.nextRequest();
             if (request == null) {
-                for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-                    requestQueuesMap.get(i).setEnd(true);
+                if (counter.getCount() == 0) {
+                    globalReq.setEnd(true);
+                    for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
+                        elevatorReq.get(i).setEnd(true);
+                    }
+                    break;
+                } else {
+                    synchronized (counter) {
+                        try {
+                            counter.wait();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
-                break;
             } else {
-                Passenger passenger = Passenger.reqToPassenger(request);
-                addPassenger(passenger);
+                if (request instanceof PersonRequest) {
+                    Passenger passenger = Passenger.reqToPassenger((PersonRequest) request);
+                    addPassenger(passenger, true);
+                } else if (request instanceof ResetRequest) {
+                    int elevatorId = ((ResetRequest) request).getElevatorId();
+                    ResetRequest resetRequest = (ResetRequest) request;
+                    Elevators.getElevator(elevatorId).initReset(resetRequest.getCapacity(), resetRequest.getSpeed());
+                }
             }
         }
         try {
@@ -55,8 +83,16 @@ public class InputHandler extends Thread {
         }
     }
 
+    public RequestQueue getGlobalRequestQueue() {
+        return globalReq;
+    }
+
     public RequestQueue getRequestQueue(int elevatorId) {
-        return requestQueuesMap.get(elevatorId);
+        return elevatorReq.get(elevatorId);
+    }
+
+    public Counter getCounter() {
+        return counter;
     }
 
 }

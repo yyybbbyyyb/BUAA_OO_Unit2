@@ -22,8 +22,13 @@ public class LookStrategy implements Strategy {
         int passengerNum = elevator.getPassengerNum();
         boolean direction = elevator.getDirection();
         ArrayList<Passenger> passengers = elevator.getPassengers();
+        boolean isReset = elevator.isReset();
+        int MAX_REQUEST_NUM = elevator.getMaxRequestNum();
+        if (isReset) {
+            return ElevatorState.RESET;
+        }
         if (canOpenElevatorForOut(currentFloor, passengers)
-            || canOpenElevatorForIn(currentFloor, passengerNum, direction)) {
+            || canOpenElevatorForIn(currentFloor, passengerNum, direction, MAX_REQUEST_NUM)) {
             return ElevatorState.OPEN;
         }
         if (passengerNum != 0) {
@@ -55,8 +60,8 @@ public class LookStrategy implements Strategy {
     }
 
     private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum,
-                                         boolean direction) {
-        if (currentRequestNum == Constants.MAX_REQUEST_NUM) {
+                                         boolean direction, int MAX_REQUEST_NUM) {
+        if (currentRequestNum == MAX_REQUEST_NUM) {
             return false;
         }
         synchronized (requestQueue) {

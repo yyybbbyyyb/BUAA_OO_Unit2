@@ -6,4 +6,5 @@ public enum ElevatorState {
     REVERSE,
     MOVE,
     WAITING,
+    RESET,
 }

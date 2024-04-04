@@ -52,6 +52,10 @@ public class RequestQueue {
         return passengers.isEmpty();
     }
 
+    public synchronized ArrayList<Passenger> getPassengers() {
+        return new ArrayList<>(passengers);
+    }
+
     public synchronized ArrayList<Passenger> getFromFloor(int floor) {
         return requestQueueByFromFloor.get(floor);
     }
