@@ -53,19 +53,18 @@ public class Dispatch extends Thread {
             }
         }
 
-        synchronized (globalReq) {
-            ArrayList<Passenger> removeList = new ArrayList<>();
-            for (Passenger passenger: globalReq.getPassengers()) {
-                int elevatorId = dispatcher.getElevatorId(passenger);
-                InputHandler.getInstance().getRequestQueue(elevatorId).addPassenger(passenger);
-                passenger.setServed(true);
-                passenger.setByElevatorId(elevatorId);
-                TimableOutput.println(String.format("RECEIVE-%d-%d", passenger.getId(), elevatorId));
-                removeList.add(passenger);
-            }
-            for (Passenger passenger: removeList) {
-                globalReq.delPassenger(passenger);
-            }
+        ArrayList<Passenger> removeList = new ArrayList<>();
+        for (Passenger passenger: globalReq.getPassengers()) {
+            int elevatorId = dispatcher.getElevatorId(passenger);
+            InputHandler.getInstance().getRequestQueue(elevatorId).addPassenger(passenger);
+            passenger.setServed(true);
+            passenger.setByElevatorId(elevatorId);
+            TimableOutput.println(String.format("RECEIVE-%d-%d", passenger.getId(), elevatorId));
+            removeList.add(passenger);
         }
+        for (Passenger passenger: removeList) {
+            globalReq.delPassenger(passenger);
+        }
+
     }
 }

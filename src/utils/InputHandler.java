@@ -37,7 +37,7 @@ public class InputHandler extends Thread {
         }
     }
 
-    public synchronized void addPassenger(Passenger passenger, Boolean isNewPassenger) {
+    public void addPassenger(Passenger passenger, Boolean isNewPassenger) {
         globalReq.addPassenger(passenger);
         if (isNewPassenger) {
             counter.increment(1);

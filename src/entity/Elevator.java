@@ -3,7 +3,6 @@ package entity;
 import com.oocourse.elevator2.TimableOutput;
 import constants.Constants;
 import constants.ElevatorState;
-import utils.Counter;
 import utils.InputHandler;
 import utils.LookStrategy;
 import utils.Strategy;
@@ -62,7 +61,7 @@ public class Elevator extends Thread {
         }
     }
 
-    public synchronized void initReset(int MAX_REQUEST_NUM, double MOVE_TIME) {
+    public void initReset(int MAX_REQUEST_NUM, double MOVE_TIME) {
         synchronized (requestQueue) {
             this.RESET_MAX_REQUEST_NUM = MAX_REQUEST_NUM;
             this.RESET_MOVE_TIME = MOVE_TIME;
