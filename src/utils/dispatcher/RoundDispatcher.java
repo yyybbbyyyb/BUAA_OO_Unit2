@@ -1,11 +1,6 @@
 package utils.dispatcher;
 
-import Config.Elevators;
-import entity.Elevator;
 import entity.Passenger;
-
-import java.util.ArrayList;
-import java.util.Random;
 
 public class RoundDispatcher implements Dispatcher {
     private int elevatorId = 1;

@@ -1,10 +1,11 @@
-package utils;
+package utils.strategy;
 
 import constants.Constants;
 import constants.ElevatorState;
 import entity.Elevator;
 import entity.Passenger;
 import entity.RequestQueue;
+import utils.InputHandle;
 
 import java.util.ArrayList;
 
@@ -13,7 +14,7 @@ public class LookStrategy implements Strategy {
     private final RequestQueue requestQueue;
 
     public LookStrategy(int elevatorId) {
-        this.requestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
+        this.requestQueue = InputHandle.getInstance().getElevatorReq(elevatorId);
     }
 
     @Override
@@ -21,14 +22,15 @@ public class LookStrategy implements Strategy {
         int currentFloor = elevator.getCurrentFloor();
         int passengerNum = elevator.getPassengerNum();
         boolean direction = elevator.getDirection();
-        ArrayList<Passenger> passengers = elevator.getPassengers();
+        ArrayList<Passenger> passengers = elevator.clonePassengers();
         boolean isReset = elevator.isReset();
-        int MAX_REQUEST_NUM = elevator.getMaxRequestNum();
+        int maxRequestNum = elevator.getMaxRequestNum();
+
         if (isReset) {
             return ElevatorState.RESET;
         }
         if (canOpenElevatorForOut(currentFloor, passengers)
-            || canOpenElevatorForIn(currentFloor, passengerNum, direction, MAX_REQUEST_NUM)) {
+            || canOpenElevatorForIn(currentFloor, passengerNum, direction, maxRequestNum)) {
             return ElevatorState.OPEN;
         }
         if (passengerNum != 0) {
@@ -50,7 +52,7 @@ public class LookStrategy implements Strategy {
         }
     }
 
-    private boolean canOpenElevatorForOut(int currentFloor, ArrayList<Passenger> passengers) {
+    public boolean canOpenElevatorForOut(int currentFloor, ArrayList<Passenger> passengers) {
         for (Passenger passenger : passengers) {
             if (passenger.getTo() == currentFloor) {
                 return true;
@@ -59,9 +61,9 @@ public class LookStrategy implements Strategy {
         return false;
     }
 
-    private boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum,
-                                         boolean direction, int MAX_REQUEST_NUM) {
-        if (currentRequestNum == MAX_REQUEST_NUM) {
+    public boolean canOpenElevatorForIn(int currentFloor, int currentRequestNum,
+                                         boolean direction, int maxRequestNum) {
+        if (currentRequestNum == maxRequestNum) {
             return false;
         }
         synchronized (requestQueue) {

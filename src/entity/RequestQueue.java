@@ -1,5 +1,6 @@
 package entity;
 
+import com.oocourse.elevator2.TimableOutput;
 import constants.Constants;
 
 import java.util.ArrayList;
@@ -26,10 +27,14 @@ public class RequestQueue {
         }
     }
 
-    public synchronized void addPassenger(Passenger passenger) {
+    public synchronized void addPassenger(Passenger passenger, Boolean isGlobal, int elevatorId) {
         passengers.add(passenger);
         requestQueueByFromFloor.get(passenger.getFrom()).add(passenger);
         requestQueueByToFloor.get(passenger.getTo()).add(passenger);
+        if (!isGlobal) {
+            passenger.setByElevatorId(elevatorId);
+            TimableOutput.println(String.format("RECEIVE-%d-%d", passenger.getId(), elevatorId));
+        }
         notifyAll();
     }
 
@@ -58,10 +63,6 @@ public class RequestQueue {
 
     public synchronized ArrayList<Passenger> getFromFloor(int floor) {
         return requestQueueByFromFloor.get(floor);
-    }
-
-    public synchronized ArrayList<Passenger> getToFloor(int floor) {
-        return requestQueueByToFloor.get(floor);
     }
 
     public synchronized boolean hasNoFromFloorReq(int floor) {

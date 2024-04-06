@@ -3,9 +3,9 @@ package entity;
 import com.oocourse.elevator2.TimableOutput;
 import constants.Constants;
 import constants.ElevatorState;
-import utils.InputHandler;
-import utils.LookStrategy;
-import utils.Strategy;
+import utils.InputHandle;
+import utils.strategy.LookStrategy;
+import utils.strategy.Strategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,32 +13,37 @@ import java.util.List;
 public class Elevator extends Thread {
     private final int elevatorId;
     private int currentFloor;
-    private boolean direction;                   //二元性电梯只能向上向下，故起始方向向上，为true
-    private final RequestQueue requestQueue;
-    private final ArrayList<Passenger> passengers;
+    private boolean direction;                      //二元性电梯只能向上向下，故起始方向向上，为true
     private final Strategy strategy;
 
+    private final RequestQueue elevatorReq;
+    private final ArrayList<Passenger> passengers;
+
     private boolean isReset = false;
-    private int MAX_REQUEST_NUM = 6;
-    private double MOVE_TIME = 0.4;
+    private int maxRequestNum = 6;
+    private double moveTime = 0.4;
 
-    private int RESET_MAX_REQUEST_NUM;
-    private double RESET_MOVE_TIME;
+    private int resetMaxRequestNum;
+    private double resetMoveTime;
 
+    private ElevatorState elevatorState;
 
     public Elevator(int elevatorId) {
         this.elevatorId = elevatorId;
         currentFloor = Constants.INIT_FLOOR;
         direction = true;
-        passengers = new ArrayList<>();
         strategy = new LookStrategy(elevatorId);
-        requestQueue = InputHandler.getInstance().getRequestQueue(elevatorId);
+        elevatorState = ElevatorState.WAITING;
+
+        passengers = new ArrayList<>();
+        elevatorReq = InputHandle.getInstance().getElevatorReq(elevatorId);
     }
 
     @Override
     public void run() {
         while (true) {
             ElevatorState nextElevatorState = strategy.getNextState(this);
+            elevatorState = nextElevatorState;
             if (nextElevatorState == ElevatorState.OVER) {
                 break;
             } else if (nextElevatorState == ElevatorState.RESET) {
@@ -48,9 +53,9 @@ public class Elevator extends Thread {
             } else if (nextElevatorState == ElevatorState.REVERSE) {
                 direction = !direction;
             } else if (nextElevatorState == ElevatorState.WAITING) {
-                synchronized (requestQueue) {
+                synchronized (elevatorReq) {
                     try {
-                        requestQueue.wait();
+                        elevatorReq.wait();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -61,56 +66,29 @@ public class Elevator extends Thread {
         }
     }
 
-    public void initReset(int MAX_REQUEST_NUM, double MOVE_TIME) {
-        synchronized (requestQueue) {
-            this.RESET_MAX_REQUEST_NUM = MAX_REQUEST_NUM;
-            this.RESET_MOVE_TIME = MOVE_TIME;
+    public void initReset(int maxRequestNum, double moveTime) {
+        synchronized (elevatorReq) {
+            this.resetMaxRequestNum = maxRequestNum;
+            this.resetMoveTime = moveTime;
             isReset = true;
-            requestQueue.notifyAll();
+            elevatorReq.notifyAll();
         }
     }
 
     private void reset() {
-        if (!passengers.isEmpty()) {
-            TimableOutput.println(String.format("OPEN-%d-%d", currentFloor, elevatorId));
-            try {
-                Thread.sleep((long) (Constants.OPEN_CLOSE_TIME * 1000));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            List<Passenger> passengersToRemove = new ArrayList<>();
-            for (Passenger passenger : passengers) {
-                TimableOutput.println(String.format("OUT-%d-%d-%d", passenger.getId(),
-                        currentFloor, elevatorId));
-                passengersToRemove.add(passenger);
-                if (passenger.getTo() == currentFloor) {
-                    InputHandler.getInstance().getCounter().decrement(1);
-
-                } else {
-                    passenger.setFrom(currentFloor);
-                    passenger.setByElevatorId(-1);
-                    passenger.setServed(false);
-                    InputHandler.getInstance().addPassenger(passenger, false);
-                }
-            }
-            TimableOutput.println(String.format("CLOSE-%d-%d", currentFloor, elevatorId));
-            for (Passenger passenger : passengersToRemove) {
-                passengers.remove(passenger);
-            }
-        }
-        MAX_REQUEST_NUM = RESET_MAX_REQUEST_NUM;
-        MOVE_TIME = RESET_MOVE_TIME;
-        synchronized (requestQueue) {
+        outPassenger(isReset);
+        maxRequestNum = resetMaxRequestNum;
+        moveTime = resetMoveTime;
+        synchronized (elevatorReq) {
             TimableOutput.println(String.format("RESET_BEGIN-%d", elevatorId));
-            List<Passenger> passengersToRemove2 = new ArrayList<>();
-            for (Passenger passenger : requestQueue.getPassengers()) {
+            List<Passenger> passengersToRemove = new ArrayList<>();
+            for (Passenger passenger : elevatorReq.getPassengers()) {
                 passenger.setByElevatorId(-1);
-                passenger.setServed(false);
-                passengersToRemove2.add(passenger);
-                InputHandler.getInstance().addPassenger(passenger, false);
+                passengersToRemove.add(passenger);
+                InputHandle.getInstance().addPassenger(passenger, false);
             }
-            for (Passenger passenger : passengersToRemove2) {
-                requestQueue.delPassenger(passenger);
+            for (Passenger passenger : passengersToRemove) {
+                elevatorReq.delPassenger(passenger);
             }
             try {
                 Thread.sleep((long) (Constants.RESET_TIME * 1000));
@@ -123,10 +101,8 @@ public class Elevator extends Thread {
     }
 
     private void move() {
-        //TODO:弹射起步？
-
         try {
-            Thread.sleep((long) (MOVE_TIME * 1000));
+            Thread.sleep((long) (moveTime * 1000));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -139,41 +115,78 @@ public class Elevator extends Thread {
     }
 
     private void outPassenger() {
-        if (passengers.isEmpty()) {
-            return;
-        }
-        List<Passenger> passengersToRemove = new ArrayList<>();
-        for (Passenger passenger : passengers) {
-            if (passenger.getTo() == currentFloor) {
-                TimableOutput.println(String.format("OUT-%d-%d-%d", passenger.getId(),
-                        currentFloor, elevatorId));
-                passengersToRemove.add(passenger);
-                InputHandler.getInstance().getCounter().decrement(1);
+        synchronized (passengers) {
+            if (passengers.isEmpty()) {
+                return;
+            }
+            List<Passenger> passengersToRemove = new ArrayList<>();
+            for (Passenger passenger : passengers) {
+                if (passenger.getTo() == currentFloor) {
+                    TimableOutput.println(String.format("OUT-%d-%d-%d", passenger.getId(),
+                            currentFloor, elevatorId));
+                    passengersToRemove.add(passenger);
+                    InputHandle.getInstance().getCounter().decrement(1);
+                }
+            }
+            for (Passenger passenger : passengersToRemove) {
+                passengers.remove(passenger);
             }
         }
-        for (Passenger passenger : passengersToRemove) {
-            passengers.remove(passenger);
+    }
+
+    private void outPassenger(Boolean isReset) {
+        synchronized (passengers) {
+            if (!passengers.isEmpty()) {
+                setElevatorState(ElevatorState.OPEN);
+                TimableOutput.println(String.format("OPEN-%d-%d", currentFloor, elevatorId));
+                try {
+                    Thread.sleep((long) (Constants.OPEN_CLOSE_TIME * 1000));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                List<Passenger> passengersToRemove = new ArrayList<>();
+                for (Passenger passenger : passengers) {
+                    TimableOutput.println(String.format("OUT-%d-%d-%d", passenger.getId(),
+                            currentFloor, elevatorId));
+                    passengersToRemove.add(passenger);
+                    if (passenger.getTo() == currentFloor) {
+                        InputHandle.getInstance().getCounter().decrement(1);
+
+                    } else {
+                        passenger.setFrom(currentFloor);
+                        passenger.setByElevatorId(-1);
+                        InputHandle.getInstance().addPassenger(passenger, false);
+                    }
+                }
+                TimableOutput.println(String.format("CLOSE-%d-%d", currentFloor, elevatorId));
+                for (Passenger passenger : passengersToRemove) {
+                    passengers.remove(passenger);
+                }
+                setElevatorState(ElevatorState.RESET);
+            }
         }
     }
 
     private void inPassenger() {
-        synchronized (requestQueue) {
-            if (!requestQueue.hasNoFromFloorReq(currentFloor)) {
-                ArrayList<Passenger> requests = requestQueue.getFromFloor(currentFloor);
+        synchronized (elevatorReq) {
+            if (!elevatorReq.hasNoFromFloorReq(currentFloor)) {
+                ArrayList<Passenger> requests = elevatorReq.getFromFloor(currentFloor);
                 List<Passenger> requestsToRemove = new ArrayList<>();
-                for (Passenger req : requests) {
-                    if (req.isSameDirection(currentFloor, direction)) {
-                        passengers.add(req);
-                        TimableOutput.println(String.format("IN-%d-%d-%d", req.getId(),
-                                currentFloor, elevatorId));
-                        requestsToRemove.add(req);
-                        if (getPassengerNum() == MAX_REQUEST_NUM) {
-                            break;
+                synchronized (passengers) {
+                    for (Passenger req : requests) {
+                        if (req.isSameDirection(currentFloor, direction)) {
+                            passengers.add(req);
+                            TimableOutput.println(String.format("IN-%d-%d-%d", req.getId(),
+                                    currentFloor, elevatorId));
+                            requestsToRemove.add(req);
+                            if (getPassengerNum() == maxRequestNum) {
+                                break;
+                            }
                         }
                     }
                 }
                 for (Passenger req : requestsToRemove) {
-                    requestQueue.delPassenger(req);
+                    elevatorReq.delPassenger(req);
                 }
             }
         }
@@ -195,13 +208,12 @@ public class Elevator extends Thread {
         TimableOutput.println(String.format("CLOSE-%d-%d", currentFloor, elevatorId));
     }
 
-    public synchronized boolean isReset() {
+    public boolean isReset() {
         return isReset;
     }
 
-
     public int getMaxRequestNum() {
-        return MAX_REQUEST_NUM;
+        return maxRequestNum;
     }
 
     public int getElevatorId() {
@@ -220,8 +232,32 @@ public class Elevator extends Thread {
         return direction;
     }
 
-    public ArrayList<Passenger> getPassengers() {
-        return passengers;
+    public ArrayList<Passenger> clonePassengers() {
+        return new ArrayList<>(this.passengers);
     }
 
+    public ArrayList<Passenger> cloneElevatorReq() {
+        ArrayList<Passenger> passengers = elevatorReq.getPassengers();
+        return new ArrayList<>(passengers);
+    }
+
+    public double getMoveTime() {
+        return moveTime;
+    }
+
+    public ElevatorState getElevatorState() {
+        return elevatorState;
+    }
+
+    public synchronized void setElevatorState(ElevatorState elevatorState) {
+        this.elevatorState = elevatorState;
+    }
+
+    public int getResetMaxRequestNum() {
+        return resetMaxRequestNum;
+    }
+
+    public double getResetMoveTime() {
+        return resetMoveTime;
+    }
 }

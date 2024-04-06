@@ -1,20 +1,20 @@
 package utils;
 
-import Config.Elevators;
-import com.oocourse.elevator2.TimableOutput;
-import entity.Elevator;
 import entity.Passenger;
 import entity.RequestQueue;
 import utils.dispatcher.Dispatcher;
+import utils.dispatcher.EstimateDispatcher;
 import utils.dispatcher.RoundDispatcher;
 
 import java.util.ArrayList;
 
 public class Dispatch extends Thread {
 
-    private final Dispatcher dispatcher = new RoundDispatcher();
+    private final Dispatcher roundDispatcher = new RoundDispatcher();
 
-    private final RequestQueue globalReq = InputHandler.getInstance().getGlobalRequestQueue();
+    private final Dispatcher estimateDispatcher = new EstimateDispatcher();
+
+    private final RequestQueue globalReq = InputHandle.getInstance().getGlobalReq();
 
     @Override
     public void run() {
@@ -33,17 +33,20 @@ public class Dispatch extends Thread {
     }
 
     public void dispatchPassenger() {
-
         ArrayList<Passenger> removeList = new ArrayList<>();
-        for (Passenger passenger: globalReq.getPassengers()) {
-            int elevatorId = dispatcher.getElevatorId(passenger);
+        ArrayList<Passenger> passengers = globalReq.getPassengers();
+        for (Passenger passenger: passengers) {
+            //int elevatorId = estimateDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
+            //if (elevatorId == -1) {
+                //elevatorId = roundDispatcher.getElevatorId(passenger);
+            //}
 
-            InputHandler.getInstance().getRequestQueue(elevatorId).addPassenger(passenger);
-            passenger.setServed(true);
-            passenger.setByElevatorId(elevatorId);
-            TimableOutput.println(String.format("RECEIVE-%d-%d", passenger.getId(), elevatorId));
+            int elevatorId = roundDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
+            InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,
+                    false, elevatorId);
             removeList.add(passenger);
         }
+
         for (Passenger passenger: removeList) {
             globalReq.delPassenger(passenger);
         }

@@ -1,16 +1,16 @@
-import Config.Elevators;
+import config.Elevators;
 import com.oocourse.elevator2.TimableOutput;
 import constants.Constants;
 import entity.Elevator;
 import utils.Dispatch;
-import utils.InputHandler;
+import utils.InputHandle;
 
 public class Main {
     public static void main(String[] args) {
         TimableOutput.initStartTimestamp();
 
         // 单例模式初始化
-        InputHandler.getInstance();
+        InputHandle.getInstance();
 
         // 初始化电梯
         for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
@@ -28,6 +28,6 @@ public class Main {
         dispatch.start();
 
         // 启动输入处理
-        InputHandler.getInstance().start();
+        InputHandle.getInstance().start();
     }
 }

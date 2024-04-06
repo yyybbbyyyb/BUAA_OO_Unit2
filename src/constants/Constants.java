@@ -10,4 +10,6 @@ public class Constants {
     public static final double OPEN_CLOSE_TIME = 0.4;
 
     public static final double RESET_TIME = 1.2;
+
+    public static final double MAX_COST_TIME = 600;
 }
