@@ -36,12 +36,10 @@ public class Dispatch extends Thread {
         ArrayList<Passenger> removeList = new ArrayList<>();
         ArrayList<Passenger> passengers = globalReq.getPassengers();
         for (Passenger passenger: passengers) {
-            //int elevatorId = estimateDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
-            //if (elevatorId == -1) {
-                //elevatorId = roundDispatcher.getElevatorId(passenger);
-            //}
-
-            int elevatorId = roundDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
+            int elevatorId = estimateDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
+            if (elevatorId == -1) {
+                elevatorId = roundDispatcher.getElevatorId(passenger);
+            }
             InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,
                     false, elevatorId);
             removeList.add(passenger);
