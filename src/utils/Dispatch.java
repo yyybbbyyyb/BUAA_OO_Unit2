@@ -1,5 +1,7 @@
 package utils;
 
+import config.Elevators;
+import entity.Elevator;
 import entity.Passenger;
 import entity.RequestQueue;
 import utils.dispatcher.Dispatcher;
@@ -42,6 +44,8 @@ public class Dispatch extends Thread {
             }
             InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,
                     false, elevatorId);
+            Elevators.getElevator(elevatorId).getInfoElevator().setElevatorReq(
+                    InputHandle.getInstance().getElevatorReq(elevatorId).getPassengers());
             removeList.add(passenger);
         }
 

@@ -19,7 +19,7 @@ public class InputHandle extends Thread {
 
     private final RequestQueue globalReq = new RequestQueue();
 
-    private final HashMap<Integer, RequestQueue> elevatorReq = new HashMap<>();
+    private final HashMap<Integer, RequestQueue> elevatorReqs = new HashMap<>();
 
     private final Counter counter = new Counter();
 
@@ -32,7 +32,7 @@ public class InputHandle extends Thread {
 
     public InputHandle() {
         for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-            elevatorReq.put(i, new RequestQueue());
+            elevatorReqs.put(i, new RequestQueue());
         }
     }
 
@@ -53,7 +53,7 @@ public class InputHandle extends Thread {
                     if (counter.getCount() == 0) {
                         globalReq.setEnd(true);
                         for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-                            elevatorReq.get(i).setEnd(true);
+                            elevatorReqs.get(i).setEnd(true);
                         }
                         break;
                     } else {
@@ -88,7 +88,7 @@ public class InputHandle extends Thread {
     }
 
     public RequestQueue getElevatorReq(int elevatorId) {
-        return elevatorReq.get(elevatorId);
+        return elevatorReqs.get(elevatorId);
     }
 
     public Counter getCounter() {

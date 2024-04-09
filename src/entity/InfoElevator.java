@@ -7,39 +7,20 @@ public class InfoElevator {
     private int currentFloor;
     private boolean direction;
 
-    private final ArrayList<Passenger> elevatorReq;
-    private final ArrayList<Passenger> passengers;
+    private ArrayList<Passenger> elevatorReq;
+    private ArrayList<Passenger> passengers;
 
-    private final boolean isReset;
+    private boolean isReset;               //未参与计算评价的电梯信息
     private int maxRequestNum;
     private double moveTime;
-    private final int resetMaxRequsetNum;
-    private final double resetMoveTime;
 
     public InfoElevator(Elevator elevator) {
         this.elevatorId = elevator.getElevatorId();
-        currentFloor = elevator.getCurrentFloor();
-        direction = elevator.getDirection();
-
-        isReset = elevator.isReset();
-        elevatorReq = elevator.cloneElevatorReq();
-        passengers = elevator.clonePassengers();
-
-        resetMaxRequsetNum = elevator.getResetMaxRequestNum();
-        resetMoveTime = elevator.getResetMoveTime();
-        maxRequestNum = elevator.getMaxRequestNum();
-        moveTime = elevator.getMoveTime();
-        if (isReset) {
-            if (maxRequestNum != resetMaxRequsetNum) {
-                maxRequestNum = resetMaxRequsetNum;
-            }
-            if (moveTime != resetMoveTime) {
-                moveTime = resetMoveTime;
-            }
-        }
+        elevatorReq = new ArrayList<>();
+        passengers = new ArrayList<>();
     }
 
-    public int getCost(Passenger passenger) {
+    public synchronized int getCost(Passenger passenger) {
         double estimate =  ((33 - getDistance(passenger) - passengers.size() * 2.5 -
                 elevatorReq.size() * 2.5 + maxRequestNum * 1.3 - moveTime * 17)
                 / (getDistance(passenger) * moveTime));
@@ -87,7 +68,38 @@ public class InfoElevator {
         return desFloor;
     }
 
-    public int getElevatorId() {
+    public synchronized int getElevatorId() {
         return elevatorId;
     }
+
+    public synchronized void setCurrentFloor(int currentFloor) {
+        this.currentFloor = currentFloor;
+    }
+
+    public synchronized void setDirection(boolean direction) {
+        this.direction = direction;
+    }
+
+    public synchronized void setElevatorReq(ArrayList<Passenger> elevatorReq) {
+        this.elevatorReq.clear();
+        this.elevatorReq.addAll(elevatorReq);
+    }
+
+    public synchronized void setPassengers(ArrayList<Passenger> passengers) {
+        this.passengers.clear();
+        this.passengers.addAll(passengers);
+    }
+
+    public synchronized void setReset(boolean reset) {
+        isReset = reset;
+    }
+
+    public synchronized void setMaxRequestNum(int maxRequestNum) {
+        this.maxRequestNum = maxRequestNum;
+    }
+
+    public synchronized void setMoveTime(double moveTime) {
+        this.moveTime = moveTime;
+    }
+
 }

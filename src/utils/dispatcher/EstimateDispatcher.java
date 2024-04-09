@@ -10,42 +10,32 @@ import java.util.ArrayList;
 
 public class EstimateDispatcher implements Dispatcher {
 
-    private final ArrayList<InfoElevator> infoElevators = new ArrayList<>();
-
     @Override
     public int getElevatorId(Passenger passenger) {
-        cleanInfoElevators();
-        getInfoFromElevators();
         int elevatorId = -1;
         int maxEstimate = -1;
-        for (int i = 0; i < infoElevators.size(); i++) {
-            InfoElevator infoElevator = infoElevators.get(i);
+        for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
+            InfoElevator infoElevator = Elevators.getElevator(i).getInfoElevator();
             int estimate =  infoElevator.getCost(passenger);
-            if (estimate < 0) {
+            int finalEstimate = infoElevator.getCost(passenger);
+            while (finalEstimate != estimate) {
+                estimate = finalEstimate;
+                finalEstimate = infoElevator.getCost(passenger);
+            }
+            if (finalEstimate < 0) {
                 continue;
             } else {
                 if (maxEstimate == -1) {
-                    maxEstimate = estimate;
+                    maxEstimate = finalEstimate;
                     elevatorId = infoElevator.getElevatorId();
                 } else {
-                    if (estimate > maxEstimate) {
-                        maxEstimate = estimate;
+                    if (finalEstimate > maxEstimate) {
+                        maxEstimate = finalEstimate;
                         elevatorId = infoElevator.getElevatorId();
                     }
                 }
             }
         }
         return elevatorId;
-    }
-
-    private void cleanInfoElevators() {
-        infoElevators.clear();
-    }
-
-    private void getInfoFromElevators() {
-        for (int i = 1; i <= Constants.ELEVATOR_NUM; i++) {
-            Elevator elevator = Elevators.getElevator(i);
-            infoElevators.add(new InfoElevator(elevator));
-        }
     }
 }

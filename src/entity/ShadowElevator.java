@@ -10,7 +10,7 @@ public class ShadowElevator {
     private int currentFloor;
     private boolean direction;
 
-    private final ArrayList<Passenger> elevatorReq;
+    private final ArrayList<Passenger> elevatorReq = new ArrayList<>();
     private final ArrayList<Passenger> passengers;
 
     private final boolean isReset;
@@ -19,7 +19,7 @@ public class ShadowElevator {
     private final int resetMaxRequsetNum;
     private final double resetMoveTime;
 
-    private final ElevatorState elevatorState;
+    private final ElevatorState elevatorState = ElevatorState.WAITING;
 
     private double costTime = 0;
 
@@ -29,10 +29,8 @@ public class ShadowElevator {
         direction = elevator.getDirection();
 
         isReset = elevator.isReset();
-        elevatorReq = elevator.cloneElevatorReq();
         passengers = elevator.clonePassengers();
 
-        elevatorState = elevator.getElevatorState();
         resetMaxRequsetNum = elevator.getResetMaxRequestNum();
         resetMoveTime = elevator.getResetMoveTime();
         maxRequestNum = elevator.getMaxRequestNum();
