@@ -39,9 +39,6 @@ public class Dispatch extends Thread {
         ArrayList<Passenger> passengers = globalReq.getPassengers();
         for (Passenger passenger: passengers) {
             int elevatorId = estimateDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
-            if (elevatorId == -1) {
-                continue;
-            }
 
             synchronized (InputHandle.getInstance().getElevatorReq(elevatorId)) {
                 InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,

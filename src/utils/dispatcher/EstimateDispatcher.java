@@ -22,17 +22,13 @@ public class EstimateDispatcher implements Dispatcher {
                 estimate = finalEstimate;
                 finalEstimate = infoElevator.getCost(passenger);
             }
-            if (finalEstimate < 0) {
-                continue;
+            if (maxEstimate == -1) {
+                maxEstimate = finalEstimate;
+                elevatorId = infoElevator.getElevatorId();
             } else {
-                if (maxEstimate == -1) {
+                if (finalEstimate > maxEstimate) {
                     maxEstimate = finalEstimate;
                     elevatorId = infoElevator.getElevatorId();
-                } else {
-                    if (finalEstimate > maxEstimate) {
-                        maxEstimate = finalEstimate;
-                        elevatorId = infoElevator.getElevatorId();
-                    }
                 }
             }
         }
