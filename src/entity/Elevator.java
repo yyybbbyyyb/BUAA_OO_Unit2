@@ -79,11 +79,11 @@ public class Elevator extends Thread {
             this.resetMaxRequestNum = maxRequestNum;
             this.resetMoveTime = moveTime;
             isReset = true;
-            infoElevator.setReset(isReset);
-            infoElevator.setMaxRequestNum(maxRequestNum);
-            infoElevator.setMoveTime(moveTime);
             elevatorReq.notifyAll();
         }
+        infoElevator.setReset(isReset);
+        infoElevator.setMaxRequestNum(maxRequestNum);
+        infoElevator.setMoveTime(moveTime);
     }
 
     private void reset() {
@@ -199,8 +199,8 @@ public class Elevator extends Thread {
                     elevatorReq.delPassenger(req);
                 }
             }
+            infoElevator.setElevatorReq(elevatorReq.getPassengers());
         }
-        infoElevator.setElevatorReq(elevatorReq.getPassengers());
     }
 
     private void openAndClose() {

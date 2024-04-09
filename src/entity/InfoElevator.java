@@ -68,7 +68,7 @@ public class InfoElevator {
         return desFloor;
     }
 
-    public synchronized int getElevatorId() {
+    public int getElevatorId() {
         return elevatorId;
     }
 

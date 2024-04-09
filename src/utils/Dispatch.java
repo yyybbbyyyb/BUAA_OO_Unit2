@@ -40,12 +40,17 @@ public class Dispatch extends Thread {
         for (Passenger passenger: passengers) {
             int elevatorId = estimateDispatcher.getElevatorId(passenger);    //可能是个RESET的电梯，但是没关系
             if (elevatorId == -1) {
-                elevatorId = roundDispatcher.getElevatorId(passenger);
+                continue;
             }
-            InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,
-                    false, elevatorId);
-            Elevators.getElevator(elevatorId).getInfoElevator().setElevatorReq(
-                    InputHandle.getInstance().getElevatorReq(elevatorId).getPassengers());
+
+            synchronized (InputHandle.getInstance().getElevatorReq(elevatorId)) {
+                InputHandle.getInstance().getElevatorReq(elevatorId).addPassenger(passenger,
+                        false, elevatorId);
+                ArrayList<Passenger> ElePassengers =
+                        InputHandle.getInstance().getElevatorReq(elevatorId).getPassengers();
+                Elevators.getElevator(elevatorId).getInfoElevator().setElevatorReq(ElePassengers);
+            }
+
             removeList.add(passenger);
         }
 
